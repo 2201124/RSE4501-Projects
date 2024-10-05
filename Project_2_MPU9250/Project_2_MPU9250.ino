@@ -6,8 +6,12 @@
 MPU6500 mpu;
 
 calData calib = { 0 };  // Calibration data
-AccelData accelData;    // Sensor data
 GyroData gyroData;
+AccelData accelData;
+
+float AccelXOffset = 0.03;
+float AccelYOffset = 0.02;
+float AccelZOffset = 1.09;
 
 void setup() {
   Serial.begin(115200);
@@ -23,21 +27,49 @@ void setup() {
       ;
     }
   } else {
-    Serial.println("MPU9250 Initialized");
+    Serial.println("MPU6500 Initialized");
   }
 }
 
 void loop() {
-  mpu.update();
-  // Get Accelerometer Data
-  mpu.getAccel(&accelData);
-  Serial.print(accelData.accelX); Serial.print(",");
-  Serial.print(accelData.accelY); Serial.print(",");
-  Serial.print(accelData.accelZ); Serial.print(",");
+  float accelXSum = 0, accelYSum = 0, accelZSum = 0;
+  float gyroXSum = 0, gyroYSum = 0, gyroZSum = 0;
 
-  // Get Gyro Data
-  mpu.getGyro(&gyroData);
-  Serial.print(gyroData.gyroX); Serial.print(",");
-  Serial.print(gyroData.gyroY); Serial.print(",");
-  Serial.println(gyroData.gyroZ);
+  // Collect 10 readings and sum them up
+  for (int i = 0; i < 10; i++) {
+    // Get sensor data
+    mpu.update();
+    mpu.getAccel(&accelData);
+    mpu.getGyro(&gyroData);
+
+    // Accumulate Accelerometer readings
+    accelXSum += (accelData.accelX - AccelXOffset);
+    accelYSum += (accelData.accelY - AccelYOffset);
+    accelZSum += (accelData.accelZ - AccelZOffset);
+
+    // Accumulate Gyroscope readings
+    gyroXSum += gyroData.gyroX;
+    gyroYSum += gyroData.gyroY;
+    gyroZSum += gyroData.gyroZ;
+
+    delay(100); // Delay between readings to control sampling rate
+  }
+
+  // Calculate the average after 10 readings
+  float avgAccelX = accelXSum / 10.0;
+  float avgAccelY = accelYSum / 10.0;
+  float avgAccelZ = accelZSum / 10.0;
+
+  float avgGyroX = gyroXSum / 10.0;
+  float avgGyroY = gyroYSum / 10.0;
+  float avgGyroZ = gyroZSum / 10.0;
+
+  // Print averaged values
+  Serial.print("Average Accel : "); Serial.print(avgAccelX); Serial.print(", ");
+  Serial.print(avgAccelY); Serial.print(", ");
+  Serial.println(avgAccelZ);
+
+  Serial.print("Average Gyro  : "); Serial.print(avgGyroX); Serial.print(", ");
+  Serial.print(avgGyroY); Serial.print(", ");
+  Serial.println(avgGyroZ);
 }
