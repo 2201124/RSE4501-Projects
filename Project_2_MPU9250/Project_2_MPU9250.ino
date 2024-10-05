@@ -17,6 +17,7 @@ float gyroXOffset = 0, gyroYOffset = 0, gyroZOffset = 0;
 static float accelXSum = 0, accelYSum = 0, accelZSum = 0;
 static float gyroXSum = 0, gyroYSum = 0, gyroZSum = 0;
 bool calibrated = false;
+unsigned long prevTime = 0;
 
 void setup() {
   Serial.begin(115200);
@@ -45,6 +46,13 @@ void loop() {
   mpu.getAccel(&accelData);
   mpu.getGyro(&gyroData);
 
+  // Get current time so that can convert gyro data to degrees
+  unsigned long currTime = millis();
+  float deltaTime = (currTime - prevTime) / 1000.0;
+  prevTime = currTime;
+  static float accumulatedDeltaTime = 0;
+  accumulatedDeltaTime += deltaTime;  // Accumulate deltaTime each iteration
+
   // Apply gyro offsets
   float gyroX = gyroData.gyroX - gyroXOffset;
   float gyroY = gyroData.gyroY - gyroYOffset;
@@ -64,17 +72,19 @@ void loop() {
     float avgAccelY = accelYSum / 10.0;
     float avgAccelZ = accelZSum / 10.0;
 
-    float avgGyroX = gyroXSum / 10.0;
-    float avgGyroY = gyroYSum / 10.0;
-    float avgGyroZ = gyroZSum / 10.0;
+    float avgGyroX = (gyroXSum / 10.0) * deltaTime;
+    float avgGyroY = (gyroYSum / 10.0) * deltaTime;
+    float avgGyroZ = (gyroZSum / 10.0) * deltaTime;
+    accumulatedDeltaTime = 0; // Reset after averaging
 
-    Serial.print("Average Accel : "); Serial.print(avgAccelX); Serial.print(", ");
-    Serial.print(avgAccelY); Serial.print(", ");
-    Serial.println(avgAccelZ);
 
-    Serial.print("Average Gyro  : "); Serial.print(avgGyroX); Serial.print(", ");
-    Serial.print(avgGyroY); Serial.print(", ");
-    Serial.println(avgGyroZ);
+  Serial.print(avgAccelX); Serial.print(", ");
+  Serial.print(avgAccelY); Serial.print(", ");
+  Serial.print(avgAccelZ);Serial.print(", ");
+
+  Serial.print(avgGyroX); Serial.print(", ");
+  Serial.print(avgGyroY); Serial.print(", ");
+  Serial.println(avgGyroZ);
 
     accelXSum = 0;
     accelYSum = 0;
