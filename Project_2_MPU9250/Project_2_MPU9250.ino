@@ -19,6 +19,9 @@ static float gyroXSum = 0, gyroYSum = 0, gyroZSum = 0;
 bool calibrated = false;
 unsigned long prevTime = 0;
 
+static float angleX = 0, angleY = 0, angleZ = 0;
+
+
 void setup() {
   Serial.begin(115200);
   Wire.begin();
@@ -65,6 +68,11 @@ void loop() {
   gyroXSum += gyroX;
   gyroYSum += gyroY;
   gyroZSum += gyroZ;
+
+  angleX += gyroX * deltaTime;
+  angleY += gyroY * deltaTime;
+  angleZ += gyroZ * deltaTime;
+  
   count++;
 
   if (count == 10) {
@@ -72,11 +80,15 @@ void loop() {
     float avgAccelY = accelYSum / 10.0;
     float avgAccelZ = accelZSum / 10.0;
 
-    float avgGyroX = (gyroXSum / 10.0) * deltaTime;
-    float avgGyroY = (gyroYSum / 10.0) * deltaTime;
-    float avgGyroZ = (gyroZSum / 10.0) * deltaTime;
+    float avgGyroX = (gyroXSum / 10.0);
+    float avgGyroY = (gyroYSum / 10.0);
+    float avgGyroZ = (gyroZSum / 10.0);
     accumulatedDeltaTime = 0; // Reset after averaging
 
+
+  Serial.print("Angle X: (Roll)"); Serial.print(angleX); Serial.print(", ");
+  Serial.print("Angle Y (Pitch): "); Serial.print(angleY); Serial.print(", ");
+  Serial.print("Angle Z (Yaw): "); Serial.println(angleZ);
 
   Serial.print(avgAccelX); Serial.print(", ");
   Serial.print(avgAccelY); Serial.print(", ");
