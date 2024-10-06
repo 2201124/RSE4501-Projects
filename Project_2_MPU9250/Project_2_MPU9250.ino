@@ -20,14 +20,14 @@ bool calibrated = false;
 unsigned long prevTime = 0;
 
 static float angleX = 0, angleY = 0, angleZ = 0;
-
+float alpha = 0.98;  // Tunable parameter for filter (between 0 and 1)
+float filteredAngleX = 0, filteredAngleY = 0;  // Filtered angles
 
 void setup() {
   Serial.begin(115200);
   Wire.begin();
   Wire.setClock(400000); // 400kHz clock
   delay(1000);
-
   int err = mpu.init(calib, IMU_ADDRESS);
   if (err != 0) {
     Serial.print("Error initializing IMU: "); 
@@ -85,20 +85,30 @@ void loop() {
     float avgGyroZ = (gyroZSum / 10.0);
     accumulatedDeltaTime = 0; // Reset after averaging
 
-    float TotalAccel = sqrt(sq(avgAccelX) + sq(avgAccelY) + sq(avgAccelZ));
+    float accelAngleX = atan2(avgAccelY, avgAccelZ) * 180 / PI;
+    float accelAngleY = atan2(avgAccelX, sqrt(sq(avgAccelY) + sq(avgAccelZ))) * 180 / PI;
+
+    // Complementary filter for combining accelerometer and gyro data
+    filteredAngleX = alpha * (filteredAngleX + angleX) + (1 - alpha) * accelAngleX;
+    filteredAngleY = alpha * (filteredAngleY + angleY) + (1 - alpha) * accelAngleY;
+
+    Serial.print("Filtered Angle X (Roll): "); Serial.print(filteredAngleX); Serial.print(", ");
+    Serial.print("Filtered Angle Y (Pitch): "); Serial.println(filteredAngleY);
+
+    // float TotalAccel = sqrt(sq(avgAccelX) + sq(avgAccelY) + sq(avgAccelZ));
     // Serial.print("Accel "); Serial.println(TotalAccel);
 
-  // Serial.print("Angle X: (Roll)"); Serial.print(angleX); Serial.print(", ");
-  // Serial.print("Pitch : "); Serial.print(angleY); Serial.print(", ");
-  // Serial.print("Angle Z (Yaw): "); Serial.println(angleZ);
+    // Serial.print("Angle X: (Roll)"); Serial.print(angleX); Serial.print(", ");
+    // Serial.print("Angle Y: (Pitch)"); Serial.print(angleY); Serial.print(", ");
+    // Serial.print("Angle Z: (Yaw): "); Serial.println(angleZ);
 
-  Serial.print(avgAccelX); Serial.print(", ");
-  Serial.print(avgAccelY); Serial.print(", ");
-  Serial.print(avgAccelZ);Serial.print(", ");
+    // Serial.print(avgAccelX); Serial.print(", ");
+    // Serial.print(avgAccelY); Serial.print(", ");
+    // Serial.print(avgAccelZ);Serial.print(", ");
 
-  Serial.print(avgGyroX); Serial.print(", ");
-  Serial.print(avgGyroY); Serial.print(", ");
-  Serial.println(avgGyroZ);
+    // Serial.print(avgGyroX); Serial.print(", ");
+    // Serial.print(avgGyroY); Serial.print(", ");
+    // Serial.println(avgGyroZ);
 
     accelXSum = 0;
     accelYSum = 0;
@@ -110,8 +120,6 @@ void loop() {
   }
   delay(10);
 }
-
-
 
 void calibrateGyro() {
   Serial.println("Calibrating Gyroscope");
