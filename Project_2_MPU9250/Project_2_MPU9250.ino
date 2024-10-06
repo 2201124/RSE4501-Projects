@@ -85,18 +85,20 @@ void loop() {
     float avgGyroZ = (gyroZSum / 10.0);
     accumulatedDeltaTime = 0; // Reset after averaging
 
+    float TotalAccel = sqrt(sq(avgAccelX) + sq(avgAccelY) + sq(avgAccelZ));
+    Serial.print("Accel "); Serial.println(TotalAccel);
 
-  Serial.print("Angle X: (Roll)"); Serial.print(angleX); Serial.print(", ");
-  Serial.print("Angle Y (Pitch): "); Serial.print(angleY); Serial.print(", ");
-  Serial.print("Angle Z (Yaw): "); Serial.println(angleZ);
+  // Serial.print("Angle X: (Roll)"); Serial.print(angleX); Serial.print(", ");
+  // Serial.print("Pitch : "); Serial.print(angleY); Serial.print(", ");
+  // Serial.print("Angle Z (Yaw): "); Serial.println(angleZ);
 
-  Serial.print(avgAccelX); Serial.print(", ");
-  Serial.print(avgAccelY); Serial.print(", ");
-  Serial.print(avgAccelZ);Serial.print(", ");
+  // Serial.print(avgAccelX); Serial.print(", ");
+  // Serial.print(avgAccelY); Serial.print(", ");
+  // Serial.print(avgAccelZ);Serial.print(", ");
 
-  Serial.print(avgGyroX); Serial.print(", ");
-  Serial.print(avgGyroY); Serial.print(", ");
-  Serial.println(avgGyroZ);
+  // Serial.print(avgGyroX); Serial.print(", ");
+  // Serial.print(avgGyroY); Serial.print(", ");
+  // Serial.println(avgGyroZ);
 
     accelXSum = 0;
     accelYSum = 0;
@@ -106,7 +108,7 @@ void loop() {
     gyroZSum = 0;
     count = 0;
   }
-  delay(100);
+  delay(10);
 }
 
 
@@ -114,7 +116,7 @@ void loop() {
 void calibrateGyro() {
   Serial.println("Calibrating Gyroscope");
   float gyroXSum = 0, gyroYSum = 0, gyroZSum = 0;
-  const int numSamples = 300;
+  const int numSamples = 500;
 
   for (int i = 0; i < numSamples; i++) {
     mpu.update();
