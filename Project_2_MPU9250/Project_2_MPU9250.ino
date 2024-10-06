@@ -4,11 +4,11 @@
 
 MPU6500 mpu;
 
-calData calib = {0};  // Calibration data
+calData calib = { 0 };  // Calibration data
 GyroData gyroData;
 AccelData accelData;
 
-// offsets
+//offsets
 float AccelXOffset = 0.03;
 float AccelYOffset = 0.02;
 float AccelZOffset = 1.09;
@@ -21,19 +21,16 @@ unsigned long prevTime = 0;
 
 static float angleX = 0, angleY = 0, angleZ = 0;
 
-// Complementary Filter Variables
-float compfilterangle = 0;
-float alpha = 0.98;  // Adjusted alpha value to balance gyro and accelerometer
 
 void setup() {
   Serial.begin(115200);
   Wire.begin();
-  Wire.setClock(400000);  // 400kHz clock
+  Wire.setClock(400000); // 400kHz clock
   delay(1000);
 
   int err = mpu.init(calib, IMU_ADDRESS);
   if (err != 0) {
-    Serial.print("Error initializing IMU: ");
+    Serial.print("Error initializing IMU: "); 
     Serial.println(err);
     while (true) {
       ;
@@ -52,12 +49,12 @@ void loop() {
   mpu.getAccel(&accelData);
   mpu.getGyro(&gyroData);
 
-  // Get current time for delta calculation
+  // Get current time so that can convert gyro data to degrees
   unsigned long currTime = millis();
   float deltaTime = (currTime - prevTime) / 1000.0;
   prevTime = currTime;
   static float accumulatedDeltaTime = 0;
-  accumulatedDeltaTime += deltaTime;
+  accumulatedDeltaTime += deltaTime;  // Accumulate deltaTime each iteration
 
   // Apply gyro offsets
   float gyroX = gyroData.gyroX - gyroXOffset;
@@ -75,7 +72,7 @@ void loop() {
   angleX += gyroX * deltaTime;
   angleY += gyroY * deltaTime;
   angleZ += gyroZ * deltaTime;
-
+  
   count++;
 
   if (count == 10) {
@@ -86,40 +83,23 @@ void loop() {
     float avgGyroX = (gyroXSum / 10.0);
     float avgGyroY = (gyroYSum / 10.0);
     float avgGyroZ = (gyroZSum / 10.0);
-    
-    // Calculate accelerometer angle for roll
-    float accelAngleX = atan2(avgAccelY, avgAccelZ) * RAD_TO_DEG;
+    accumulatedDeltaTime = 0; // Reset after averaging
 
-    // Debugging: Print raw accelerometer angle
-    Serial.print("Accel Roll Angle: ");
-    Serial.println(accelAngleX);
-
-    // Complementary filter: combine accelerometer and gyroscope data
-    compfilterangle = alpha * (compfilterangle + avgGyroX * accumulatedDeltaTime) + (1 - alpha) * accelAngleX;
-
-    // Print filtered roll angle
-    Serial.print("Filtered Roll Angle: ");
-    Serial.println(compfilterangle);
-
-    // Calculate total acceleration (for fall detection)
     float TotalAccel = sqrt(sq(avgAccelX) + sq(avgAccelY) + sq(avgAccelZ));
-    Serial.print("Total Acceleration: ");
-    Serial.println(TotalAccel);
+    // Serial.print("Accel "); Serial.println(TotalAccel);
 
-    // Debugging: print other angles
-    // Serial.print("Angle X: (Roll)"); Serial.print(angleX); Serial.print(", ");
-    // Serial.print("Pitch : "); Serial.print(angleY); Serial.print(", ");
-    // Serial.print("Angle Z (Yaw): "); Serial.println(angleZ);
+  // Serial.print("Angle X: (Roll)"); Serial.print(angleX); Serial.print(", ");
+  // Serial.print("Pitch : "); Serial.print(angleY); Serial.print(", ");
+  // Serial.print("Angle Z (Yaw): "); Serial.println(angleZ);
 
-    // Serial.print(avgAccelX); Serial.print(", ");
-    // Serial.print(avgAccelY); Serial.print(", ");
-    // Serial.print(avgAccelZ);Serial.print(", ");
+  Serial.print(avgAccelX); Serial.print(", ");
+  Serial.print(avgAccelY); Serial.print(", ");
+  Serial.print(avgAccelZ);Serial.print(", ");
 
-    // Serial.print(avgGyroX); Serial.print(", ");
-    // Serial.print(avgGyroY); Serial.print(", ");
-    // Serial.println(avgGyroZ);
+  Serial.print(avgGyroX); Serial.print(", ");
+  Serial.print(avgGyroY); Serial.print(", ");
+  Serial.println(avgGyroZ);
 
-    // Reset accumulated values
     accelXSum = 0;
     accelYSum = 0;
     accelZSum = 0;
@@ -127,16 +107,16 @@ void loop() {
     gyroYSum = 0;
     gyroZSum = 0;
     count = 0;
-    accumulatedDeltaTime = 0;  // Reset after averaging
   }
-
   delay(10);
 }
+
+
 
 void calibrateGyro() {
   Serial.println("Calibrating Gyroscope");
   float gyroXSum = 0, gyroYSum = 0, gyroZSum = 0;
-  const int numSamples = 1000;  // Increased number of samples for better accuracy
+  const int numSamples = 500;
 
   for (int i = 0; i < numSamples; i++) {
     mpu.update();
@@ -145,19 +125,16 @@ void calibrateGyro() {
     gyroYSum += gyroData.gyroY;
     gyroZSum += gyroData.gyroZ;
 
-    delay(10);  // Delay between readings to ensure stable averaging
+    delay(10); // Delay between readings to ensure stable averaging
   }
 
   gyroXOffset = gyroXSum / numSamples;
   gyroYOffset = gyroYSum / numSamples;
   gyroZOffset = gyroZSum / numSamples;
 
-  Serial.print("Gyro Calibration Complete. Offset Values are: ");
-  Serial.print("X: ");
-  Serial.print(gyroXOffset);
-  Serial.print(", Y: ");
-  Serial.print(gyroYOffset);
-  Serial.print(", Z: ");
-  Serial.println(gyroZOffset);
+  Serial.print("Gyro Calibration Complete. Offsets Values are: ");
+  Serial.print("X: "); Serial.print(gyroXOffset); Serial.print(", ");
+  Serial.print("Y: "); Serial.print(gyroYOffset); Serial.print(", ");
+  Serial.print("Z: "); Serial.println(gyroZOffset);
   calibrated = true;
 }
