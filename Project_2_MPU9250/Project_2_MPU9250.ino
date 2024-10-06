@@ -88,10 +88,10 @@ void loop() {
     angleX_cf = alpha * (angleX_cf + deltaAngleX) + (1.0 - alpha) * accelAngleX;
     angleY_cf = alpha * (angleY_cf + deltaAngleY) + (1.0 - alpha) * accelAngleY;
 
-    Serial.print("Complementary Filter Angle X: ");
-    Serial.print(angleX_cf);
-    Serial.print(", Angle Y: ");
-    Serial.println(angleY_cf);
+    // Serial.print("Complementary Filter Angle X: ");
+    // Serial.print(angleX_cf);
+    // Serial.print(", Angle Y: ");
+    // Serial.println(angleY_cf);
 
 
   if (count == 10) {
@@ -109,13 +109,15 @@ void loop() {
     // Serial.print("Angle Y(Pitch): "); Serial.print(angleY); Serial.print(", ");
     // Serial.print("Angle Z  (Yaw): "); Serial.println(angleZ);
 
-    // Serial.print(avgAccelX); Serial.print(", ");
-    // Serial.print(avgAccelY); Serial.print(", ");
-    // Serial.print(avgAccelZ);Serial.print(", ");
+    Serial.print(avgAccelX); Serial.print(", ");
+    Serial.print(avgAccelY); Serial.print(", ");
+    Serial.print(avgAccelZ);Serial.print(", ");
 
-    // Serial.print(avgGyroX); Serial.print(", ");
-    // Serial.print(avgGyroY); Serial.print(", ");
-    // Serial.println(avgGyroZ);
+    Serial.print(avgGyroX); Serial.print(", ");
+    Serial.print(avgGyroY); Serial.print(", ");
+    Serial.print(avgGyroZ); Serial.print(", ");
+    Serial.print(angleX_cf); Serial.print(", ");
+    Serial.println(angleY_cf); 
 
     accelXSum = 0;
     accelYSum = 0;
