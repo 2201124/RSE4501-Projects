@@ -14,20 +14,22 @@ float AccelYOffset = 0.02;
 float AccelZOffset = 1.09;
 float gyroXOffset = 0, gyroYOffset = 0, gyroZOffset = 0;
 
-static float accelXSum = 0, accelYSum = 0, accelZSum = 0;
-static float gyroXSum = 0, gyroYSum = 0, gyroZSum = 0;
+float accelXSum = 0, accelYSum = 0, accelZSum = 0;
+float gyroXSum = 0, gyroYSum = 0, gyroZSum = 0;
 bool calibrated = false;
 unsigned long prevTime = 0;
 
-static float angleX = 0, angleY = 0, angleZ = 0;
-float alpha = 0.98;  // Tunable parameter for filter (between 0 and 1)
-float filteredAngleX = 0, filteredAngleY = 0;  // Filtered angles
+float angleX = 0, angleY = 0, angleZ = 0;
+
+float alpha = 0.80;  // Complementary filter coefficient
+float angleX_cf = 0, angleY_cf = 0;  // Angles from complementary filter
 
 void setup() {
   Serial.begin(115200);
   Wire.begin();
   Wire.setClock(400000); // 400kHz clock
   delay(1000);
+
   int err = mpu.init(calib, IMU_ADDRESS);
   if (err != 0) {
     Serial.print("Error initializing IMU: "); 
@@ -50,8 +52,8 @@ void loop() {
   mpu.getGyro(&gyroData);
 
   // Get current time so that can convert gyro data to degrees
-  unsigned long currTime = millis();
-  float deltaTime = (currTime - prevTime) / 1000.0;
+  unsigned long currTime = micros();
+  float deltaTime = (currTime - prevTime) / 1000000.0;
   prevTime = currTime;
   static float accumulatedDeltaTime = 0;
   accumulatedDeltaTime += deltaTime;  // Accumulate deltaTime each iteration
@@ -75,6 +77,19 @@ void loop() {
   
   count++;
 
+float accelAngleX = atan2(accelData.accelY, sqrt(accelData.accelX * accelData.accelX + accelData.accelZ * accelData.accelZ)) * 180 / PI;
+float accelAngleY = atan2(-accelData.accelX, sqrt(accelData.accelY * accelData.accelY + accelData.accelZ * accelData.accelZ)) * 180 / PI;
+
+// Complementary filter to combine accelerometer and gyroscope data
+angleX_cf = alpha * (angleX_cf + angleX) + (1.0 - alpha) * accelAngleX;
+angleY_cf = alpha * (angleY_cf + angleZ) + (1.0 - alpha) * accelAngleY;
+
+Serial.print("Complementary Filter Angle X: ");
+Serial.print(angleX_cf);
+Serial.print(", Angle Y: ");
+Serial.println(angleY_cf);
+
+
   if (count == 10) {
     float avgAccelX = accelXSum / 10.0;
     float avgAccelY = accelYSum / 10.0;
@@ -85,22 +100,11 @@ void loop() {
     float avgGyroZ = (gyroZSum / 10.0);
     accumulatedDeltaTime = 0; // Reset after averaging
 
-    float accelAngleX = atan2(avgAccelY, avgAccelZ) * 180 / PI;
-    float accelAngleY = atan2(avgAccelX, sqrt(sq(avgAccelY) + sq(avgAccelZ))) * 180 / PI;
-
-    // Complementary filter for combining accelerometer and gyro data
-    filteredAngleX = alpha * (filteredAngleX + angleX) + (1 - alpha) * accelAngleX;
-    filteredAngleY = alpha * (filteredAngleY + angleY) + (1 - alpha) * accelAngleY;
-
-    Serial.print("Filtered Angle X (Roll): "); Serial.print(filteredAngleX); Serial.print(", ");
-    Serial.print("Filtered Angle Y (Pitch): "); Serial.println(filteredAngleY);
-
-    // float TotalAccel = sqrt(sq(avgAccelX) + sq(avgAccelY) + sq(avgAccelZ));
-    // Serial.print("Accel "); Serial.println(TotalAccel);
-
-    // Serial.print("Angle X: (Roll)"); Serial.print(angleX); Serial.print(", ");
-    // Serial.print("Angle Y: (Pitch)"); Serial.print(angleY); Serial.print(", ");
-    // Serial.print("Angle Z: (Yaw): "); Serial.println(angleZ);
+    float TotalAccel = sqrt(sq(avgAccelX) + sq(avgAccelY) + sq(avgAccelZ));
+    // Serial.print("Total Accel: "); Serial.println(TotalAccel);
+    // Serial.print("Angle X (Roll): "); Serial.print(angleX); Serial.print(", ");
+    // Serial.print("Angle Y(Pitch): "); Serial.print(angleY); Serial.print(", ");
+    // Serial.print("Angle Z  (Yaw): "); Serial.println(angleZ);
 
     // Serial.print(avgAccelX); Serial.print(", ");
     // Serial.print(avgAccelY); Serial.print(", ");
@@ -120,6 +124,8 @@ void loop() {
   }
   delay(10);
 }
+
+
 
 void calibrateGyro() {
   Serial.println("Calibrating Gyroscope");
