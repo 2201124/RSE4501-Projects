@@ -47,16 +47,15 @@ void loop() {
   if (!calibrated) return;
 
   static int count = 0;
-  mpu.update();
-  mpu.getAccel(&accelData);
-  mpu.getGyro(&gyroData);
 
   // Get current time so that can convert gyro data to degrees
   unsigned long currTime = micros();
   float deltaTime = (currTime - prevTime) / 1000000.0;
   prevTime = currTime;
-  static float accumulatedDeltaTime = 0;
-  accumulatedDeltaTime += deltaTime;  // Accumulate deltaTime each iteration
+
+  mpu.update();
+  mpu.getAccel(&accelData);
+  mpu.getGyro(&gyroData);
 
   // Apply gyro offsets
   float gyroX = gyroData.gyroX - gyroXOffset;
@@ -77,17 +76,22 @@ void loop() {
   
   count++;
 
-float accelAngleX = atan2(accelData.accelY, sqrt(accelData.accelX * accelData.accelX + accelData.accelZ * accelData.accelZ)) * 180 / PI;
-float accelAngleY = atan2(-accelData.accelX, sqrt(accelData.accelY * accelData.accelY + accelData.accelZ * accelData.accelZ)) * 180 / PI;
+  
 
-// Complementary filter to combine accelerometer and gyroscope data
-angleX_cf = alpha * (angleX_cf + angleX) + (1.0 - alpha) * accelAngleX;
-angleY_cf = alpha * (angleY_cf + angleZ) + (1.0 - alpha) * accelAngleY;
+    float accelAngleX = atan2(accelData.accelY, sqrt(accelData.accelX * accelData.accelX + accelData.accelZ * accelData.accelZ)) * 180 / PI;
+    float accelAngleY = atan2(-accelData.accelX, sqrt(accelData.accelY * accelData.accelY + accelData.accelZ * accelData.accelZ)) * 180 / PI;
 
-Serial.print("Complementary Filter Angle X: ");
-Serial.print(angleX_cf);
-Serial.print(", Angle Y: ");
-Serial.println(angleY_cf);
+    // Integrate gyroscope data to get change in angles
+    float deltaAngleX = gyroX * deltaTime;
+    float deltaAngleY = gyroY * deltaTime;
+    // Complementary filter to combine accelerometer and gyroscope data
+    angleX_cf = alpha * (angleX_cf + deltaAngleX) + (1.0 - alpha) * accelAngleX;
+    angleY_cf = alpha * (angleY_cf + deltaAngleY) + (1.0 - alpha) * accelAngleY;
+
+    Serial.print("Complementary Filter Angle X: ");
+    Serial.print(angleX_cf);
+    Serial.print(", Angle Y: ");
+    Serial.println(angleY_cf);
 
 
   if (count == 10) {
@@ -98,7 +102,6 @@ Serial.println(angleY_cf);
     float avgGyroX = (gyroXSum / 10.0);
     float avgGyroY = (gyroYSum / 10.0);
     float avgGyroZ = (gyroZSum / 10.0);
-    accumulatedDeltaTime = 0; // Reset after averaging
 
     float TotalAccel = sqrt(sq(avgAccelX) + sq(avgAccelY) + sq(avgAccelZ));
     // Serial.print("Total Accel: "); Serial.println(TotalAccel);
