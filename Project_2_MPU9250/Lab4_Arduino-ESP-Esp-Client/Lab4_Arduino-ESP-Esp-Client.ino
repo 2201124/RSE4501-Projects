@@ -5,10 +5,7 @@
 #include <NTPClient.h>
 #include <WiFiUdp.h>
 
-
 const int incomingPin = D5; 
-unsigned long lastDebounceTime = 0;
-unsigned long debounceDelay = 50;
 
 int lastSignalState = LOW;
 int signalState = LOW;
@@ -41,17 +38,12 @@ void loop() {
   timeClient.update();
 
   if (reading != lastSignalState) {
-    lastDebounceTime = millis();  // Reset the debounce timer
-  }
+    signalState = reading;
 
-  if ((millis() - lastDebounceTime) > debounceDelay) {
-    if (reading != signalState) {
-      signalState = reading;
-
-      if (signalState == HIGH) {
-        String timestamp = timeClient.getFormattedTime();
-        sendMessage("Fall Detected at " + timestamp);
-      }
+    if (signalState == HIGH) {
+      String timestamp = timeClient.getFormattedTime();
+      Serial.println("Fall Detected at " + timestamp);
+      // sendMessage("Fall Detected at " + timestamp);
     }
   }
   lastSignalState = reading;

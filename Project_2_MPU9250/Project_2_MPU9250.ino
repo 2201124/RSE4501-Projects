@@ -134,17 +134,10 @@ void loop() {
 }
 
 void fallDetection(float angle) {
-  bool fallDetected = false;
-
   if (angle < 0 || angle < 50) {
-    fallDetected = true;
-  }
-
-  if (fallDetected) {
-    digitalWrite(signalPin, HIGH);   // Send HIGH signal to ESP8266
-  } else {
-    digitalWrite(signalPin, LOW);   
-    fallDetected = false;
+    digitalWrite(signalPin, HIGH);
+  } else if(angle > 75) {
+    digitalWrite(signalPin, LOW);  
   }
 }
 
