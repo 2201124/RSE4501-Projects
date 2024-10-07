@@ -5,7 +5,6 @@
 #include <NTPClient.h>
 #include <WiFiUdp.h>
 
-const int incomingPin = D5; 
 
 int lastSignalState = LOW;
 int signalState = LOW;
@@ -37,6 +36,9 @@ void loop() {
   int reading = digitalRead(incomingPin);
   timeClient.update();
 
+  static bool fallDetected = false;
+  static unsigned long lastCheckTime = 0;
+
   if (reading != lastSignalState) {
     signalState = reading;
 
@@ -44,10 +46,30 @@ void loop() {
       String timestamp = timeClient.getFormattedTime();
       Serial.println("Fall Detected at " + timestamp);
       // sendMessage("Fall Detected at " + timestamp);
+      fallDetected = true;
+      lastCheckTime = millis();  // Start tracking time
+    } else {
+      fallDetected = false;  // Reset if LOW signal is detected
     }
   }
+
+  // If a fall has been detected, check every 15 seconds if the person is still on the floor
+  if (fallDetected && (millis() - lastCheckTime >= 15000)) {
+    String timestamp = timeClient.getFormattedTime();
+    if (digitalRead(incomingPin) == HIGH) {
+      Serial.println("Person is still on the floor at: " + timestamp);
+      // sendMessage("Person is still on the floor at: " + timestamp);
+      // Update the last check time for the next 5-second interval
+      lastCheckTime = millis();
+    } else {
+      // If the signal goes LOW, reset fall detection
+      fallDetected = false;
+    }
+  }
+
   lastSignalState = reading;
 }
+
 
 
 
