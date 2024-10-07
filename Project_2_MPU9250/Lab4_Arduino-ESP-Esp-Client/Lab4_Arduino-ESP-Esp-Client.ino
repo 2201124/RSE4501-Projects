@@ -2,6 +2,8 @@
 #include <ESP8266HTTPClient.h>
 #include <WiFiClient.h>
 #include <UrlEncode.h>
+#include <NTPClient.h>
+#include <WiFiUdp.h>
 
 
 const int incomingPin = D5; 
@@ -11,23 +13,32 @@ unsigned long debounceDelay = 50;
 int lastSignalState = LOW;
 int signalState = LOW;
 
+WiFiUDP ntpUDP;
+NTPClient timeClient(ntpUDP, "pool.ntp.org", 28800, 60000); // 0 timezone offset, sync every 60 seconds
+
+
 void setup() {
   Serial.begin(115200);
   pinMode(incomingPin, INPUT);
 
   WiFi.begin(ssid, password);
   Serial.println("Connecting");
-  while(WiFi.status() != WL_CONNECTED) {
+  while (WiFi.status() != WL_CONNECTED) {
     delay(500);
     Serial.print(".");
   }
   Serial.println("");
   Serial.print("Connected to WiFi network with IP Address: ");
   Serial.println(WiFi.localIP());
+
+  timeClient.begin();
+  timeClient.update(); // Update the time client to get the current time
 }
+
 
 void loop() {
   int reading = digitalRead(incomingPin);
+  timeClient.update();
 
   if (reading != lastSignalState) {
     lastDebounceTime = millis();  // Reset the debounce timer
@@ -38,11 +49,11 @@ void loop() {
       signalState = reading;
 
       if (signalState == HIGH) {
-        sendMessage("Fall Detected");
+        String timestamp = timeClient.getFormattedTime();
+        sendMessage("Fall Detected at " + timestamp);
       }
     }
   }
-
   lastSignalState = reading;
 }
 
