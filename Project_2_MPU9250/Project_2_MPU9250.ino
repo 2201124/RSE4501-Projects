@@ -23,12 +23,15 @@ float angleX = 0, angleY = 0, angleZ = 0;
 
 float alpha = 0.80;  // Complementary filter coefficient
 float angleX_cf = 0, angleY_cf = 0;  // Angles from complementary filter
+const int signalPin = 14;  // Pin sending signal to ESP8266
 
 void setup() {
   Serial.begin(115200);
   Wire.begin();
   Wire.setClock(400000); // 400kHz clock
   delay(1000);
+
+  pinMode(signalPin, OUTPUT);
 
   int err = mpu.init(calib, IMU_ADDRESS);
   if (err != 0) {
@@ -41,6 +44,7 @@ void setup() {
     Serial.println("MPU6500 Initialized");
     calibrateGyro();
   }
+  
 }
 
 void loop() {
@@ -75,9 +79,7 @@ void loop() {
   angleZ += gyroZ * deltaTime;
   
   count++;
-
   
-
     float accelAngleX = atan2(accelData.accelY, sqrt(accelData.accelX * accelData.accelX + accelData.accelZ * accelData.accelZ)) * 180 / PI;
     float accelAngleY = atan2(-accelData.accelX, sqrt(accelData.accelY * accelData.accelY + accelData.accelZ * accelData.accelZ)) * 180 / PI;
 
@@ -127,10 +129,24 @@ void loop() {
     gyroZSum = 0;
     count = 0;
   }
+  fallDetection(angleY_cf);
   delay(10);
 }
 
+void fallDetection(float angle) {
+  bool fallDetected = false;
 
+  if (angle < 0 || angle < 50) {
+    fallDetected = true;
+  }
+
+  if (fallDetected) {
+    digitalWrite(signalPin, HIGH);   // Send HIGH signal to ESP8266
+  } else {
+    digitalWrite(signalPin, LOW);   
+    fallDetected = false;
+  }
+}
 
 void calibrateGyro() {
   Serial.println("Calibrating Gyroscope");

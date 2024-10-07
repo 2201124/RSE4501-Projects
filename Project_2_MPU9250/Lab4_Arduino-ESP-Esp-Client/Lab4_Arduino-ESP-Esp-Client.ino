@@ -4,7 +4,6 @@
 #include <UrlEncode.h>
 
 
-
 const int incomingPin = D5; 
 unsigned long lastDebounceTime = 0;
 unsigned long debounceDelay = 50;
@@ -25,29 +24,26 @@ void setup() {
   Serial.println("");
   Serial.print("Connected to WiFi network with IP Address: ");
   Serial.println(WiFi.localIP());
-  sendMessage("Hello from ESP32!");
 }
 
 void loop() {
-  // int reading = digitalRead(incomingPin);
+  int reading = digitalRead(incomingPin);
 
-  // if (reading != lastSignalState) {
-  //   lastDebounceTime = millis();  // Reset the debounce timer
-  // }
+  if (reading != lastSignalState) {
+    lastDebounceTime = millis();  // Reset the debounce timer
+  }
 
-  // if ((millis() - lastDebounceTime) > debounceDelay) {
-  //   if (reading != signalState) {
-  //     signalState = reading;
+  if ((millis() - lastDebounceTime) > debounceDelay) {
+    if (reading != signalState) {
+      signalState = reading;
 
-  //     if (signalState == HIGH) {
-  //       Serial.println("Received HIGH signal from Arduino!");
-  //     } else {
-  //       Serial.println("Received LOW signal from Arduino.");
-  //     }
-  //   }
-  // }
+      if (signalState == HIGH) {
+        sendMessage("Fall Detected");
+      }
+    }
+  }
 
-  // lastSignalState = reading;
+  lastSignalState = reading;
 }
 
 
